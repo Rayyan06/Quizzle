@@ -1,0 +1,15 @@
+{
+    "name": "Space Quiz",
+    "questions": [{
+        "time_limit": 20,
+        "text": "What is the planet after earth?",
+        "order": 1, 
+        "answers": [
+            {
+                "text": "What is the planet after earth?",
+                "is_correct": false
+            }
+        ]
+    }]
+
+}
