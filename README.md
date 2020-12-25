@@ -1,10 +1,10 @@
-# Developing Django on Repl.it
+# Quizzle
 
 - Fork this template to get started
 - Simply hit run to start the server
 - The server will autoreload as needed. You don't need to restart the server manually.
 
-## Add your first view
+## Cool Quizzes!
 
 1. Create a file under `mysite` named `views.py` with the following contents:
 

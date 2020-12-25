@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { makeStyles, ThemeProvider } from "@material-ui/core/styles";
 import { Grid, Typography, TextField, Button, ButtonBase, Card, CardActionArea, CardContent, CircularProgress, Box } from "@material-ui/core";
+import { CheckIcon, Close } from '@material-ui/icons';
 import { createMuiTheme } from "@material-ui/core/styles";
 import blue from "@material-ui/core/colors/blue";
 import PropTypes from 'prop-types'
@@ -13,13 +14,13 @@ doesn't get too crazy, I will refrain from doing so.
 Well, turns out it did get crazy and I ended up 
 doing it! lol :).
 */
-const theme = createMuiTheme({
+const my_theme = createMuiTheme({
     palette: {
         primary: {
-            main: "#bf360c",
-            light: "#f9683a",
-            dark: "#870000",
-            contrastText: "#ffffff"
+            main: "#b0bec5",
+            light: "#e2f1f8",
+            dark: "#808395",
+            contrastText: "#000000"
             
         },
         secondary: {
@@ -36,20 +37,24 @@ const theme = createMuiTheme({
 const useStyles = makeStyles((theme)=>({
     root: {
         flexGrow: 1,
-        padding: theme.spacing(2),
+        padding: theme.spacing(20),
         height: "100vh",
         width: "100vw",
-        background: theme.palette.primary.main
+        background: my_theme.palette.primary.light
+
     },
     main: {
         padding: theme.spacing(2),
         alignItems: 'center',
         align: 'center',
         justify: 'center',
-        background: theme.palette.primary.light
+        background: my_theme.palette.primary.light
     },
     answerCard: {
-        background: theme.palette.secondary.main,
+        background: my_theme.palette.secondary.main,
+    },
+    spinner: {
+        color: my_theme.palette.secondary.dark
     }
 }))
 
@@ -90,10 +95,14 @@ CircularProgressWithLabel.propTypes = {
 const Question = (props) => {
 
     const questionId = props.questionId;
-    const [question, setQuestion] = useState({});
+    const [questionText, setQuestionText] = useState('');
+    const [answers, setAnswers] = useState([]);
     const [timeLimit, setTimeLimit] = useState(0);
     const [timeLeft, setTimeLeft] = useState(0);
     const [isTimeLeft, setIsTimeLeft] = useState(true);
+    const [answered, setAnswered] = useState(false);
+
+
 
     const getQuestionDetails = () => {
         const request = async() => {
@@ -102,67 +111,49 @@ const Question = (props) => {
             return json
         }
         request().then((data)=>{
-            setQuestion({'text': data.text, 'answers': data.answers})
+            setQuestionText(data.text)
+            setAnswers(data.answers)
             setTimeLimit(data.time_limit)
             setTimeLeft(data.time_limit)
-            console.log(data.answers)
         })
     }
     
 
-    // const answers = question['answers'].map((answer)=>
-    //     <li key={answer.id}>
-    //         {answer.text}
-    //     </li>
-    // );
-
-    const answers = question['answers']
-
-    // const startTimer = () => {
-    //     setTimeLeft(20)
-    //     console.log(timeLeft)
-    //     const timer = setInterval(()=>{
-    //         if (timeLeft>=0) {
-    //             setTimeLeft(timeLeft => timeLeft - 1)
-
-    //         } else {
-    //             clearInterval(timer)
-    //             alert("WHAT")
-    //             props.handleSubmit(false);
-            
-
-    //         }
-    //     }, 1000);
-    //     return () => clearInterval(timer);
-    // };
-        const timer = setInterval(() => {
-            setTimeLeft(timeLeft => timeLeft - 1)
-            if (timeLeft < 0) {
-                clearInterval(timer)
-            } 
-        } ,1000)
-        
+    
 
 
     useEffect(()=>{
 
         getQuestionDetails();
-        timer;
-    }, [])
-    
+
+    }, []);
+
+    useEffect(()=>{
+        getQuestionDetails();
+    }, [questionId])
 
 
+    useEffect(()=>{
+        let timer = timeLeft > 0 && setInterval(() => {
+            setTimeLeft(timeLeft => timeLeft - 1)
+        } , 1000)
 
+        if (!timeLeft) { props.handleSubmit(false) } 
+
+        return ()=>{
+            clearInterval(timer)
+        };
+    }, [timeLeft])
 
     const handleAnswerButtonClicked = (answer) => {
-        if (answer.is_correct==true) {
-            props.handleSubmit(true);
+        if (answer.is_correct) {
+            props.handleSubmit(true)
         } else {
-            props.handleSubmit(false);
+            props.handleSubmit(false)
         }
-        
-        
-    }
+    }   
+
+    
     const classes = useStyles();
     
     const renderAnswers = () => {
@@ -198,19 +189,28 @@ const Question = (props) => {
     //let progressAmount = Math.floor((timeLeft/timeLimit) * 100)
 
     //console.log(seconds);
-    let progressAmount = (timeLeft/20) * 100;
+    let progressAmount = (timeLeft/timeLimit) * 100;
 
-    return (
+    const renderQuestionPage=()=>(
         <div>
-            <Grid item xs={12}>
-                <CircularProgressWithLabel value={progressAmount} time_left={timeLeft} size={80} thickness={5}/>
-                <Typography component="h2" variant="h2">{question.text}</Typography>
-            </Grid>
-            <Grid item xs={12}>
-                {question['answers'] ? renderAnswers() : <Typography component="h2" variant="h2">LOADING...</Typography>}
-            </Grid>
+            <ThemeProvider theme={my_theme}>
+                <Grid item xs={12}>
+                    <CircularProgressWithLabel className='spinner' value={progressAmount} time_left={timeLeft} size={80} thickness={5}/>
+                    <Typography component="h2" variant="h2">#{props.questionNum} : {questionText}</Typography>
+                </Grid>
+                <Grid item xs={12}>
+                    {answers ? renderAnswers() : <Typography component="h2" variant="h2">LOADING...</Typography>}
+                </Grid>
+            </ThemeProvider>
         </div>
-    );
+    )
+    const renderAnsweredPage = (isCorrect) => (
+        isCorrect ? <CheckIcon /> : <Close />
+    )
+
+
+    return (<div>{answered ? renderAnsweredPage(true) : renderQuestionPage}</div>);
+
 }
 
 
@@ -278,20 +278,27 @@ const Quiz = (props) => {
         getQuizDetails();
     }, []);
     
-    const handleSubmit=(correct)=>{
-        setCurrQuestionNum(currQuestionNum+1);
-        setCurrQuestionID(questionsList[currQuestionNum])
-        if (correct) {
-            console.log("correct")
+    const handleSubmit=(isCorrect)=>{
+        setAnswered(true);
+
+        if (isCorrect) {
+            // Show success
+            
+            console.log("WIN WIN")     
         } else {
-            console.log("WRONG")
+            // Show failure
+            console.log("LOSE LOSER")
         }
+        setCurrQuestionNum(currQuestionNum=>currQuestionNum+1);
+        setCurrQuestionID(questionsList[currQuestionNum])
+        console.log(currQuestionID)
     }
 
     //console.log(currQuestionID)
-    const renderQuestion = () => {
-        return <Question questionId={currQuestionID} handleSubmit={handleSubmit}/>;
-    }
+
+    const renderQuestion =()=>(<Question questionId={currQuestionID} handleSubmit={handleSubmit} questionNum={currQuestionNum}/>);
+ 
+ 
 
     const classes = useStyles();
 
@@ -299,13 +306,16 @@ const Quiz = (props) => {
         <Grid container spacing={1} className={classes.root}>
 
             <Grid container spacing={1} className={classes.main}>
-
                 {currQuestionID ? renderQuestion(): <Typography component="h2" variant="h2">Loading Question...</Typography>} 
             </Grid>
 
         </Grid>
     );
 }
+
+
+
+
 
 
 export default Quiz;

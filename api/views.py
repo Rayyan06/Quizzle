@@ -24,7 +24,7 @@ class GetQuiz(APIView):
                 data = QuizSerializer(quiz[0]).data
                 data['is_host'] = self.request.session.session_key == quiz[0].host
                 
-
+                # print("Hello, World BLAH BLAH")
                 return Response(data, status=status.HTTP_200_OK)
 
             return Response({'Quiz not found': 'Invalid Code'}, status=status.HTTP_404_NOT_FOUND)
